@@ -21,10 +21,9 @@ jobs:
   SourceCodeAnalysis:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     name: Analyse des dépendances (OSV)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: google/osv-scanner-action/osv-scanner-action
-      - uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: osv-results.sarif
+    # Invoke the reusable OSV-Scanner workflow (it handles checkout, scan, and SARIF upload)
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.0.2
+    permissions:
+      actions: read          # needed for reusable workflow
+      contents: read         # needed to checkout & scan
+      security-events: write # needed to upload SARIF results

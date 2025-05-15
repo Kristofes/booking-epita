@@ -5,29 +5,26 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch:
 
-# Permissions globales pour checkout et upload SARIF
 permissions:
-  contents: read
-  security-events: write
+  contents: read        # checkout & upload SARIF
+  security-events: write # nécessaire pour envoyer les rapports SARIF
 
 jobs:
   DependenciesAnalysis:
     name: Détection de patterns (Semgrep)
     runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep:latest
     permissions:
       contents: read
       actions: read
       security-events: write
-    container:
-      image: returntocorp/semgrep:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Run Semgrep CI
-        run: semgrep ci --config p/java --sarif > semgrep-results.sarif
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+      - name: Run Semgrep
+        run: semgrep --config p/java --sarif --output semgrep-results.sarif
 
       - name: Upload Semgrep SARIF
         uses: github/codeql-action/upload-sarif@v3
@@ -40,16 +37,16 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
       security-events: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
       - name: Run OSV Scanner
-        uses: google/osv-scanner-action/osv-scanner-action@v1
+        uses: google/osv-scanner-action@v2.0.2
 
       - name: Upload OSV SARIF
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: osv-results.sarif
+          sarif_file: results.sarif

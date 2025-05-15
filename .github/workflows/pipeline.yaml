@@ -5,25 +5,51 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch:
 
+# Permissions globales pour checkout et upload SARIF
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   DependenciesAnalysis:
     name: Détection de patterns (Semgrep)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
     container:
-      image: returntocorp/semgrep
+      image: returntocorp/semgrep:latest
     steps:
-      - uses: actions/checkout@v3
-      - run: semgrep --config p/java --sarif --output semgrep-results.sarif
-      - uses: github/codeql-action/upload-sarif@v2
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Run Semgrep CI
+        run: semgrep ci --config p/java --sarif > semgrep-results.sarif
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: semgrep-results.sarif
 
   SourceCodeAnalysis:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     name: Analyse des dépendances (OSV)
-    # Invoke the reusable OSV-Scanner workflow (it handles checkout, scan, and SARIF upload)
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.0.2
+    runs-on: ubuntu-latest
     permissions:
-      actions: read          # needed for reusable workflow
-      contents: read         # needed to checkout & scan
-      security-events: write # needed to upload SARIF results
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Run OSV Scanner
+        uses: google/osv-scanner-action/osv-scanner-action@v1
+
+      - name: Upload OSV SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: osv-results.sarif

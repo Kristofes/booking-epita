@@ -19,9 +19,12 @@ jobs:
           sarif_file: semgrep-results.sarif
 
   SourceCodeAnalysis:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     name: Analyse des dépendances (OSV)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: google/osv-scanner-action/osv-scanner-action
       - uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: osv-results.sarif

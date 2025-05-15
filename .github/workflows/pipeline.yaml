@@ -48,65 +48,13 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run Semgrep Analysis
+        env:
+          SEMGREP_APP_TOKEN: "${{ secrets.SEMGREP_APP_TOKEN }}"
         run: |
           semgrep \
-            --config "p/java" \
-            --sarif --output semgrep-results.sarif \
-            .
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
-name: Daily Security Pipeline
-
-on:
-  schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
-
-permissions:
-  contents: read        # checkout & upload SARIF
-  security-events: write # nécessaire pour envoyer les rapports SARIF
-
-jobs:
-  DependenciesAnalysis:
-    name: Détection de patterns (Semgrep)
-    runs-on: ubuntu-latest
-    container:
-      image: returntocorp/semgrep:latest
-    permissions:
-      contents: read
-      actions: read
-      security-events: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Run Semgrep
-        run: semgrep --config p/java --sarif --output semgrep-results.sarif
-
-      - name: Upload Semgrep SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: semgrep-results.sarif
-
-  SourceCodeAnalysis:
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    name: Analyse des dépendances (OSV)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read
-      security-events: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Run OSV Scanner
-        uses: google/osv-scanner-action@v2.0.2
-
-      - name: Upload OSV SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: results.sarif
+          --config "p/java" \
+          --sarif --output semgrep-results.sarif \
+          .
 
       - name: Upload Semgrep results to GitHub Security Dashboard
         uses: github/codeql-action/upload-sarif@v2

@@ -1,0 +1,27 @@
+name: Daily Security Pipeline
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  DependenciesAnalysis:
+    name: Détection de patterns (Semgrep)
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - uses: actions/checkout@v3
+      - run: semgrep --config p/java --sarif --output semgrep-results.sarif
+      - uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: semgrep-results.sarif
+
+  SourceCodeAnalysis:
+    name: Analyse des dépendances (OSV)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: google/osv-scanner-action/osv-scanner-action
+      - uses: github/codeql-action/upload-sarif@v2
